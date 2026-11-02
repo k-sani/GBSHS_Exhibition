@@ -39,3 +39,6 @@ node tests/awards.test.mjs
 ```
 
 일반 탐색과 우수작 탐색, 링크 복원, 선정 의견 및 배지를 검사한다. 별도 자료가 있으면 실제 작품 수, 수동 색 표시, 중복 보류, 일곱 유형, 미디어 지연 로딩과 종료도 검사한다.
+
+
+PDF first-page previews: run generate-previews.py after placing original PDFs in private/pdfs. Generated dist/thumbnails are deployment assets excluded from public Git source. private/catalog.json may reference ./thumbnails/{student}.webp. Original titles are reviewed against filenames and first pages; private/title-audit.json records provenance. Current counts: 94 works, 19 awards, 72 PDF previews, 3 image previews, 43 original titles. build-preview.mjs embeds the generated previews in the standalone HTML.
