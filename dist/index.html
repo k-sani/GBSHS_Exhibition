@@ -20,7 +20,7 @@
         <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
         <span>여행의 조각<span class="brand-subtitle">해외 이공계 체험학습 온라인 전시</span></span>
       </a>
-      <nav class="header-nav" aria-label="주 메뉴"><a href="#awards" class="awards-nav">우수작</a><a href="#exhibition">전체 작품</a><a href="#about">전시 소개</a></nav>
+      <nav class="header-nav" aria-label="주 메뉴"><a href="#exhibition" class="awards-nav" id="nav-awards">우수작</a><a href="#exhibition" id="nav-gallery">전체 작품</a><a href="#about">전시 소개</a></nav>
       <span class="edition"><span class="status-dot"></span> 2026 EXHIBITION</span>
     </div>
   </header>
@@ -44,14 +44,15 @@
         <div class="art-bottom"><span>각자의 방식으로, 오래 기억할 순간.</span><span>↳ ARCHIVE 001</span></div>
       </div>
     </section>
-    <section class="awards page-width" id="awards" aria-labelledby="awards-title">
-      <div class="section-heading"><div><p class="eyebrow">SELECTED WORKS</p><h2 id="awards-title">우수작 전시관</h2></div><span class="awards-status" id="awards-status">선정 예정</span></div>
-      <p class="awards-description">선정된 작품은 종류에 관계없이 이곳에 함께 전시됩니다.</p>
-      <div class="awards-empty" id="awards-empty"><span class="awards-symbol" aria-hidden="true">✦</span><div><h3>이곳에 모일 특별한 기록을 기다리며.</h3><p>우수작이 선정되면 이곳에서 만나볼 수 있어요.<br>지금은 아래 전시관에서 모든 작품을 둘러보세요.</p></div><a href="#exhibition" class="text-button">전체 작품 보기 <span aria-hidden="true">↗</span></a></div>
-      <div class="awards-grid" id="awards-grid" hidden></div>
-    </section>
     <section class="exhibition page-width" id="exhibition" aria-labelledby="exhibition-title">
+      <span id="awards" class="collection-anchor" aria-hidden="true"></span>
+      <div class="browse-search"><label for="search">어떤 기록을 찾고 있나요?</label><div class="search-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><input type="search" id="search" aria-label="이름, 학번, 작품명 검색" placeholder="이름, 학번 또는 작품명으로 검색하세요" autocomplete="off"></div></div>
       <div class="section-heading"><div><p class="eyebrow">THE EXHIBITION</p><h2 id="exhibition-title">어떤 기록을 만나볼까요?</h2></div><span class="draft-label"><span class="status-dot"></span> 온라인 전시</span></div>
+      <div class="collection-switch" role="group" aria-label="전시 구분">
+        <button type="button" class="collection-button active" id="collection-gallery" aria-pressed="true"><span>전체 작품</span><span class="collection-count" id="gallery-count">0</span></button>
+        <button type="button" class="collection-button" id="collection-awards" aria-pressed="false"><span><span aria-hidden="true">✦</span> 우수작</span><span class="collection-count" id="awards-count">0</span></button>
+      </div>
+      <p class="collection-summary" id="collection-summary">모든 작품을 자유롭게 둘러보세요.</p>
       <div class="category-strip" role="group" aria-label="작품 종류 선택">
         <button class="category-button active" data-category="all" aria-pressed="true"><span class="category-number">00</span><span>전체 작품</span><span class="category-count">0</span></button>
         <button class="category-button" data-category="photo" aria-pressed="false"><span class="category-number">01</span><span>사진과 글</span><span class="category-count">0</span></button>
@@ -64,9 +65,10 @@
       </div>
       <div class="collection-tools">
         <div class="collection-description"><h3 id="collection-name">전체 작품</h3><span id="result-count" role="status" aria-live="polite"></span></div>
-        <div class="search-sort"><div class="search-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg><input type="search" id="search" aria-label="이름, 학번, 작품명 검색" placeholder="이름, 학번, 작품명 검색" autocomplete="off"></div><label class="sort-field"><span class="sr-only">작품 정렬</span><select id="sort"><option value="student">학번순</option><option value="title">제목순</option></select><span aria-hidden="true">⌄</span></label></div>
+        <label class="sort-field"><span class="sr-only">작품 정렬</span><select id="sort"><option value="student">학번순</option><option value="title">제목순</option></select><span aria-hidden="true">⌄</span></label>
       </div>
       <p class="prototype-note"><span aria-hidden="true">ⓘ</span> 작품을 선택하면 원본을 크게 감상할 수 있어요.</p>
+      <div class="awards-empty" id="awards-empty" hidden><span class="awards-symbol" aria-hidden="true">✦</span><div><h3>이곳에 모일 특별한 기록을 기다리며.</h3><p>우수작이 선정되면 이곳에서 만나볼 수 있어요.</p></div><button type="button" class="text-button" id="show-all-works">전체 작품 보기 <span aria-hidden="true">↗</span></button></div>
       <div id="artwork-grid" class="artwork-grid"></div>
       <div id="empty-state" class="empty-state" hidden><span aria-hidden="true">↳</span><h3>검색 결과가 없어요.</h3><p>다른 이름, 학번 또는 작품명으로 검색해 보세요.</p><button id="reset-search" class="text-button">검색 조건 초기화 <span aria-hidden="true">↗</span></button></div>
       <div class="collection-end"><span id="collection-end-text"></span><a href="#exhibition">맨 위로 <span aria-hidden="true">↑</span></a></div>
