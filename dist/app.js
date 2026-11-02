@@ -15,7 +15,7 @@ const artworks = (window.EXHIBITION_CATALOG || []).map((work,index)=>({...work,i
 // Add confirmed selections here, in exhibition order. Leave empty until judging is complete.
 // Example format: { id: "work-01", note: "Optional selection comment" }
 const awardSelections = [];
-const state = {category:"all", query:"", sort:"student", selected:null, page:1, dialogCollection:"gallery"};
+const state = {collection:"gallery", category:"all", query:"", sort:"student", selected:null, page:1};
 const grid = document.querySelector("#artwork-grid");
 const dialog = document.querySelector("#artwork-dialog");
 const searchInput = document.querySelector("#search");
@@ -67,52 +67,65 @@ function renderWorkCard(work) {
   const badge = awarded ? '<span class="award-badge award-badge--card"><span aria-hidden="true">✦</span> 우수작</span>' : '';
   return `<article class="artwork-card${awarded ? ' has-award' : ''}" style="--tone:${cat.tone};--tone-ink:${cat.ink};--accent:${cat.accent}"><button type="button" class="artwork-open" data-work="${escapeHtml(work.id)}" aria-haspopup="dialog" aria-label="${awarded ? '우수작, ' : ''}${escapeHtml(work.title)}, ${escapeHtml(work.student)} ${escapeHtml(work.author)} 열기"><div class="artwork-placeholder"><div class="placeholder-center">${icon(work.category)}<span>${cat.label}</span></div><img class="artwork-thumbnail" src="${escapeHtml(work.thumbnailUrl)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"><span class="placeholder-index">${String(work.index).padStart(2,"0")} / RECORD</span>${badge}<span class="open-indicator" aria-hidden="true">↗</span><div class="placeholder-bottom"><span>작품 감상하기</span><span>${formatName(work)}</span></div></div><div class="artwork-meta"><div class="artwork-category">${cat.label}</div><h4 class="artwork-title"><span>${escapeHtml(work.title)}</span><span>${formatName(work)}</span></h4><p class="artwork-author">${escapeHtml(work.student)}<span aria-hidden="true"></span>${escapeHtml(work.author)}</p></div></button></article>`;
 }
-function renderAwards() {
-  const works = awardedArtworks();
-  document.querySelector("#awards-status").textContent = works.length ? `${works.length}점 선정` : "선정 예정";
-  document.querySelector("#awards-empty").hidden = works.length > 0;
-  document.querySelector("#awards-grid").hidden = works.length === 0;
-  document.querySelector("#awards-grid").innerHTML = works.map(renderWorkCard).join("");
+function collectionArtworks() {
+  return state.collection === "awards" ? awardedArtworks() : artworks;
 }
 function activeArtworks() {
-  return state.dialogCollection === "awards" ? awardedArtworks() : filteredArtworks();
+  return filteredArtworks();
 }
 function filteredArtworks() {
   const query = state.query.trim().toLocaleLowerCase("ko").normalize("NFC");
-  return artworks.filter(work => (state.category === "all" || work.category === state.category)
+  return collectionArtworks().filter(work => (state.category === "all" || work.category === state.category)
     && `${work.title} ${work.student} ${work.author} ${categories[work.category].label}`.normalize("NFC").toLocaleLowerCase("ko").includes(query))
     .sort((a,b) => state.sort === "title" ? a.title.localeCompare(b.title,"ko") : a.student.localeCompare(b.student));
 }
 function render() {
   const filtered = filteredArtworks();
+  const collection = collectionArtworks();
+  const awards = awardedArtworks();
+  for (const kind of ["gallery","awards"]) {
+    const button = document.querySelector(`#collection-${kind}`);
+    const active = state.collection === kind;
+    button.classList.toggle("active",active);
+    button.setAttribute("aria-pressed",String(active));
+  }
+  document.querySelector("#gallery-count").textContent = artworks.length;
+  document.querySelector("#awards-count").textContent = awards.length;
+  document.querySelector("#collection-summary").textContent = state.collection === "awards" ? "우수작으로 선정된 기록을 모았어요. 검색과 작품 종류로 원하는 기록을 찾아보세요." : "모든 작품을 자유롭게 둘러보세요. 검색과 작품 종류로 원하는 기록을 찾아보세요.";
   document.querySelectorAll(".category-button").forEach(button => {
     const active = button.dataset.category === state.category;
     button.classList.toggle("active",active);
     button.setAttribute("aria-pressed",String(active));
-    button.querySelector(".category-count").textContent = button.dataset.category === "all" ? artworks.length : artworks.filter(work => work.category === button.dataset.category).length;
+    button.querySelector(".category-count").textContent = button.dataset.category === "all" ? collection.length : collection.filter(work => work.category === button.dataset.category).length;
   });
-  document.querySelector("#collection-name").textContent = state.category === "all" ? "전체 작품" : categories[state.category].label;
+  document.querySelector("#collection-name").textContent = `${state.collection === "awards" ? "우수작" : "전체 작품"}${state.category !== "all" ? " · " + categories[state.category].label : ""}`;
   document.querySelector("#result-count").textContent = `${filtered.length}점${state.query.trim() ? " · 검색 결과" : ""}`;
   grid.innerHTML = filtered.map(renderWorkCard).join("");
-  document.querySelector("#empty-state").hidden = filtered.length !== 0;
+  const pendingAwards = state.collection === "awards" && awards.length === 0;
+  document.querySelector("#awards-empty").hidden = !pendingAwards;
+  document.querySelector("#empty-state").hidden = filtered.length !== 0 || pendingAwards;
   document.querySelector("#collection-end-text").textContent = filtered.length ? `${filtered.length}개의 기록을 모두 둘러보았어요.` : "다른 기록을 찾아보세요.";
 }
 function syncUrl() {
   if (restoring || location.protocol === "file:") return;
   const params = new URLSearchParams();
+  if (state.collection === "awards") params.set("collection","awards");
   if (state.category !== "all") params.set("type",state.category);
   if (state.selected) params.set("work",state.selected);
-  if (state.selected && state.dialogCollection === "awards") params.set("collection","awards");
   if (state.query.trim()) params.set("q",state.query.trim());
   if (state.sort !== "student") params.set("sort",state.sort);
-  history.replaceState(null,"",`${location.pathname}${params.size ? `?${params}` : ""}${location.hash}`);
+  history.replaceState(null,"",`${location.pathname}${params.size ? `?${params}` : ""}${location.hash === "#awards" ? "#exhibition" : location.hash}`);
 }
-function showWork(id, updateUrl = true, collection = state.dialogCollection) {
+function setCollection(collection) {
+  state.collection = collection === "awards" ? "awards" : "gallery";
+  render();
+  syncUrl();
+}
+function showWork(id, updateUrl = true) {
   const work = artworks.find(item => item.id === id);
   if (!work) return;
   if (!dialog.open) returnFocus = document.activeElement;
   state.selected = id;
-  state.dialogCollection = collection === "awards" && awardFor(work) ? "awards" : "gallery";
   state.page = 1;
   const cat = categories[work.category];
   document.querySelector("#dialog-category").textContent = `${cat.number} — ${cat.label}`;
@@ -164,15 +177,19 @@ function moveWork(direction) {
   if (index >= 0 && filtered[index+direction]) showWork(filtered[index+direction].id);
 }
 document.querySelectorAll(".category-button").forEach(button => button.addEventListener("click",() => {state.category=button.dataset.category;render();syncUrl();}));
+document.querySelector("#collection-gallery").addEventListener("click",() => setCollection("gallery"));
+document.querySelector("#collection-awards").addEventListener("click",() => setCollection("awards"));
+document.querySelector("#nav-gallery").addEventListener("click",() => setCollection("gallery"));
+document.querySelector("#nav-awards").addEventListener("click",() => setCollection("awards"));
+document.querySelector("#show-all-works").addEventListener("click",() => setCollection("gallery"));
 searchInput.addEventListener("input",() => {state.query=searchInput.value;render();syncUrl();});
 document.querySelector("#sort").addEventListener("change",event => {state.sort=event.target.value;render();syncUrl();});
 document.querySelector("#reset-search").addEventListener("click",() => {state.query="";state.category="all";searchInput.value="";render();syncUrl();searchInput.focus();});
-grid.addEventListener("click",event => {const button=event.target.closest("[data-work]");if(button) showWork(button.dataset.work,true,"gallery");});
-document.querySelector("#awards-grid").addEventListener("click",event => {const button=event.target.closest("[data-work]");if(button) showWork(button.dataset.work,true,"awards");});
-for(const gallery of [grid,document.querySelector("#awards-grid")]) gallery.addEventListener("error",event=>{if(event.target.matches?.("img.artwork-thumbnail"))event.target.hidden=true;},true);
+grid.addEventListener("click",event => {const button=event.target.closest("[data-work]");if(button) showWork(button.dataset.work);});
+grid.addEventListener("error",event=>{if(event.target.matches?.("img.artwork-thumbnail"))event.target.hidden=true;},true);
 document.querySelector("#close-dialog").addEventListener("click",() => dialog.close());
 dialog.addEventListener("click",event => {if(event.target===dialog){const rect=dialog.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom) dialog.close();}});
-dialog.addEventListener("close",() => {if(dialog.open)return;clearViewer();document.body.classList.remove("dialog-open");state.selected=null;state.dialogCollection="gallery";syncUrl();if(returnFocus?.isConnected)returnFocus.focus({preventScroll:true});});
+dialog.addEventListener("close",() => {if(dialog.open)return;clearViewer();document.body.classList.remove("dialog-open");state.selected=null;syncUrl();if(returnFocus?.isConnected)returnFocus.focus({preventScroll:true});});
 document.querySelector("#previous-artwork").addEventListener("click",() => moveWork(-1));
 document.querySelector("#next-artwork").addEventListener("click",() => moveWork(1));
 document.querySelector("#previous-page").addEventListener("click",() => {if(state.page>1){state.page--;renderPage();}});
@@ -181,6 +198,7 @@ dialog.addEventListener("keydown",event => {if(event.key==="ArrowLeft"){event.pr
 function restoreUrl() {
   restoring=true;
   const params = new URLSearchParams(location.search);
+  state.collection = params.get("collection") === "awards" || location.hash === "#awards" ? "awards" : "gallery";
   state.category = Object.hasOwn(categories,params.get("type")) ? params.get("type") : "all";
   state.query = params.get("q") || "";
   state.sort = params.get("sort") === "title" ? "title" : "student";
@@ -188,10 +206,10 @@ function restoreUrl() {
   document.querySelector("#sort").value=state.sort;
   render();
   const initial = params.get("work");
-  if (artworks.some(work=>work.id===initial)) showWork(initial,false,params.get("collection") === "awards" ? "awards" : "gallery");
+  if (filteredArtworks().some(work=>work.id===initial)) showWork(initial,false);
   else if(dialog.open) dialog.close();
   restoring=false;
 }
-renderAwards();
 restoreUrl();
 window.addEventListener("popstate",restoreUrl);
+window.addEventListener("hashchange",() => {if(location.hash === "#awards") setCollection("awards");});
