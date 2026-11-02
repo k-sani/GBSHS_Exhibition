@@ -2,6 +2,8 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import {prepareCatalog} from './prepare-catalog.mjs';
+await prepareCatalog();
 const root = fileURLToPath(new URL('./dist', import.meta.url));
 const mime = { '.html':'text/html; charset=utf-8', '.css':'text/css; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.svg':'image/svg+xml' };
 const server = createServer(async (req,res) => {
