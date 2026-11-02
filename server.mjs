@@ -5,7 +5,7 @@ import path from 'node:path';
 import {prepareCatalog} from './prepare-catalog.mjs';
 await prepareCatalog();
 const root = fileURLToPath(new URL('./dist', import.meta.url));
-const mime = { '.html':'text/html; charset=utf-8', '.css':'text/css; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.svg':'image/svg+xml' };
+const mime = { '.html':'text/html; charset=utf-8', '.css':'text/css; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.svg':'image/svg+xml', '.webp':'image/webp' };
 const server = createServer(async (req,res) => {
   try {
     const pathname = decodeURIComponent(new URL(req.url,'http://127.0.0.1').pathname);
