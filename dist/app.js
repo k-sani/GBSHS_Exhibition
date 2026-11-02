@@ -20,7 +20,10 @@ const titles = [
 ];
 const categoryKeys = Object.keys(categories);
 const artworks = Array.from({length:18}, (_,i) => ({id:`work-${String(i+1).padStart(2,"0")}`, category:categoryKeys[i%6], title:titles[i%6][Math.floor(i/6)], student:String(1101+i), author:`학생 ${String(i+1).padStart(2,"0")}`, index:i+1}));
-const state = {category:"all", query:"", sort:"student", selected:null, page:1};
+// Add confirmed selections here, in exhibition order. Leave empty until judging is complete.
+// Example format: { id: "work-01", note: "Optional selection comment" }
+const awardSelections = [];
+const state = {category:"all", query:"", sort:"student", selected:null, page:1, dialogCollection:"gallery"};
 const grid = document.querySelector("#artwork-grid");
 const dialog = document.querySelector("#artwork-dialog");
 const searchInput = document.querySelector("#search");
@@ -29,6 +32,34 @@ let restoring = false;
 
 function icon(category) {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${categories[category].icon}</svg>`;
+}
+function awardFor(work) {
+  return awardSelections.find(selection => selection.id === work.id);
+}
+function awardedArtworks() {
+  const seen = new Set();
+  return awardSelections.flatMap(selection => {
+    const work = artworks.find(item => item.id === selection.id);
+    if (!work || seen.has(work.id)) return [];
+    seen.add(work.id);
+    return [work];
+  });
+}
+function renderWorkCard(work) {
+  const cat = categories[work.category];
+  const awarded = Boolean(awardFor(work));
+  const badge = awarded ? '<span class="award-badge award-badge--card"><span aria-hidden="true">✦</span> 우수작</span>' : '';
+  return `<article class="artwork-card${awarded ? ' has-award' : ''}" style="--tone:${cat.tone};--tone-ink:${cat.ink};--accent:${cat.accent}"><button type="button" class="artwork-open" data-work="${work.id}" aria-haspopup="dialog" aria-label="${awarded ? '우수작, ' : ''}예시 작품 ${work.title}, ${work.student} ${work.author} 열기"><div class="artwork-placeholder"><span class="placeholder-index">${String(work.index).padStart(2,"0")} / RECORD</span>${badge}<span class="open-indicator" aria-hidden="true">↗</span><div class="placeholder-center">${icon(work.category)}<span>${cat.label}</span></div><div class="placeholder-bottom"><span>작품이 전시될 자리</span><span>PLACEHOLDER</span></div></div><div class="artwork-meta"><div class="artwork-category">${cat.label}</div><h4 class="artwork-title"><span>${work.title}</span><span>예시</span></h4><p class="artwork-author">${work.student}<span aria-hidden="true"></span>${work.author}</p></div></button></article>`;
+}
+function renderAwards() {
+  const works = awardedArtworks();
+  document.querySelector("#awards-status").textContent = works.length ? `${works.length}점 선정` : "선정 예정";
+  document.querySelector("#awards-empty").hidden = works.length > 0;
+  document.querySelector("#awards-grid").hidden = works.length === 0;
+  document.querySelector("#awards-grid").innerHTML = works.map(renderWorkCard).join("");
+}
+function activeArtworks() {
+  return state.dialogCollection === "awards" ? awardedArtworks() : filteredArtworks();
 }
 function filteredArtworks() {
   const query = state.query.trim().toLocaleLowerCase("ko").normalize("NFC");
@@ -46,10 +77,7 @@ function render() {
   });
   document.querySelector("#collection-name").textContent = state.category === "all" ? "전체 작품" : categories[state.category].label;
   document.querySelector("#result-count").textContent = `예시 ${filtered.length}점${state.query.trim() ? " · 검색 결과" : ""}`;
-  grid.innerHTML = filtered.map(work => {
-    const cat = categories[work.category];
-    return `<article class="artwork-card" style="--tone:${cat.tone};--tone-ink:${cat.ink};--accent:${cat.accent}"><button type="button" class="artwork-open" data-work="${work.id}" aria-haspopup="dialog" aria-label="예시 작품 ${work.title}, ${work.student} ${work.author} 열기"><div class="artwork-placeholder"><span class="placeholder-index">${String(work.index).padStart(2,"0")} / RECORD</span><span class="open-indicator" aria-hidden="true">↗</span><div class="placeholder-center">${icon(work.category)}<span>${cat.label}</span></div><div class="placeholder-bottom"><span>작품이 전시될 자리</span><span>PLACEHOLDER</span></div></div><div class="artwork-meta"><div class="artwork-category">${cat.label}</div><h4 class="artwork-title"><span>${work.title}</span><span>예시</span></h4><p class="artwork-author">${work.student}<span aria-hidden="true"></span>${work.author}</p></div></button></article>`;
-  }).join("");
+  grid.innerHTML = filtered.map(renderWorkCard).join("");
   document.querySelector("#empty-state").hidden = filtered.length !== 0;
   document.querySelector("#collection-end-text").textContent = filtered.length ? `${filtered.length}개의 예시 기록을 모두 둘러보았어요.` : "다른 기록을 찾아보세요.";
 }
@@ -58,20 +86,26 @@ function syncUrl() {
   const params = new URLSearchParams();
   if (state.category !== "all") params.set("type",state.category);
   if (state.selected) params.set("work",state.selected);
+  if (state.selected && state.dialogCollection === "awards") params.set("collection","awards");
   if (state.query.trim()) params.set("q",state.query.trim());
   if (state.sort !== "student") params.set("sort",state.sort);
   history.replaceState(null,"",`${location.pathname}${params.size ? `?${params}` : ""}${location.hash}`);
 }
-function showWork(id, updateUrl = true) {
+function showWork(id, updateUrl = true, collection = state.dialogCollection) {
   const work = artworks.find(item => item.id === id);
   if (!work) return;
   if (!dialog.open) returnFocus = document.activeElement;
   state.selected = id;
+  state.dialogCollection = collection === "awards" && awardFor(work) ? "awards" : "gallery";
   state.page = 1;
   const cat = categories[work.category];
   document.querySelector("#dialog-category").textContent = `${cat.number} — ${cat.label}`;
   document.querySelector("#dialog-title").textContent = work.title;
   document.querySelector("#dialog-author").textContent = `${work.student}  ·  ${work.author} (예시)`;
+  const award = awardFor(work);
+  document.querySelector("#dialog-award").hidden = !award;
+  document.querySelector("#dialog-award-note").hidden = !award?.note;
+  document.querySelector("#dialog-award-note").textContent = award?.note || "";
   document.querySelector("#dialog-description").textContent = cat.description;
   document.querySelector("#detail-category").textContent = cat.label;
   document.querySelector("#detail-author").textContent = `${work.student} ${work.author} (예시)`;
@@ -98,14 +132,14 @@ function renderPage() {
   document.querySelector("#next-page").disabled = state.page === cat.pages;
 }
 function renderWorkNavigation() {
-  const filtered = filteredArtworks();
+  const filtered = activeArtworks();
   const index = filtered.findIndex(work => work.id === state.selected);
   document.querySelector("#artwork-position").textContent = index >= 0 ? `${String(index+1).padStart(2,"0")} / ${String(filtered.length).padStart(2,"0")}` : "예시 작품";
   document.querySelector("#previous-artwork").disabled = index <= 0;
   document.querySelector("#next-artwork").disabled = index < 0 || index >= filtered.length-1;
 }
 function moveWork(direction) {
-  const filtered = filteredArtworks();
+  const filtered = activeArtworks();
   const index = filtered.findIndex(work => work.id === state.selected);
   if (index >= 0 && filtered[index+direction]) showWork(filtered[index+direction].id);
 }
@@ -113,10 +147,11 @@ document.querySelectorAll(".category-button").forEach(button => button.addEventL
 searchInput.addEventListener("input",() => {state.query=searchInput.value;render();syncUrl();});
 document.querySelector("#sort").addEventListener("change",event => {state.sort=event.target.value;render();syncUrl();});
 document.querySelector("#reset-search").addEventListener("click",() => {state.query="";state.category="all";searchInput.value="";render();syncUrl();searchInput.focus();});
-grid.addEventListener("click",event => {const button=event.target.closest("[data-work]");if(button) showWork(button.dataset.work);});
+grid.addEventListener("click",event => {const button=event.target.closest("[data-work]");if(button) showWork(button.dataset.work,true,"gallery");});
+document.querySelector("#awards-grid").addEventListener("click",event => {const button=event.target.closest("[data-work]");if(button) showWork(button.dataset.work,true,"awards");});
 document.querySelector("#close-dialog").addEventListener("click",() => dialog.close());
 dialog.addEventListener("click",event => {if(event.target===dialog){const rect=dialog.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom) dialog.close();}});
-dialog.addEventListener("close",() => {if(dialog.open)return;document.body.classList.remove("dialog-open");state.selected=null;syncUrl();if(returnFocus?.isConnected)returnFocus.focus({preventScroll:true});});
+dialog.addEventListener("close",() => {if(dialog.open)return;document.body.classList.remove("dialog-open");state.selected=null;state.dialogCollection="gallery";syncUrl();if(returnFocus?.isConnected)returnFocus.focus({preventScroll:true});});
 document.querySelector("#previous-artwork").addEventListener("click",() => moveWork(-1));
 document.querySelector("#next-artwork").addEventListener("click",() => moveWork(1));
 document.querySelector("#previous-page").addEventListener("click",() => {if(state.page>1){state.page--;renderPage();}});
@@ -132,9 +167,10 @@ function restoreUrl() {
   document.querySelector("#sort").value=state.sort;
   render();
   const initial = params.get("work");
-  if (artworks.some(work=>work.id===initial)) showWork(initial,false);
+  if (artworks.some(work=>work.id===initial)) showWork(initial,false,params.get("collection") === "awards" ? "awards" : "gallery");
   else if(dialog.open) dialog.close();
   restoring=false;
 }
+renderAwards();
 restoreUrl();
 window.addEventListener("popstate",restoreUrl);
