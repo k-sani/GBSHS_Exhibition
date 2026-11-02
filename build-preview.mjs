@@ -4,6 +4,13 @@ import vm from 'node:vm';
 import {prepareCatalog} from './prepare-catalog.mjs';
 const root = new URL('./', import.meta.url);
 const catalog=await prepareCatalog();
+let offlineCatalogSource=catalog.source;
+for(const work of catalog.works){
+  if(work.thumbnailUrl.startsWith('./thumbnails/')){
+    const bytes=await readFile(new URL('dist/'+work.thumbnailUrl.slice(2),root));
+    offlineCatalogSource=offlineCatalogSource.replace(JSON.stringify(work.thumbnailUrl),JSON.stringify('data:image/webp;base64,'+bytes.toString('base64')));
+  }
+}
 const [html,css,js,svg] = await Promise.all(['dist/index.html','dist/styles.css','dist/app.js','dist/favicon.svg'].map(file=>readFile(new URL(file,root),'utf8')));
 new vm.Script(js,{filename:'app.js'});
 new vm.Script(catalog.source,{filename:'catalog.js'});
@@ -16,7 +23,7 @@ const standalone = html.replace('<link rel="stylesheet" href="./styles.css">',`<
   .replace('<script src="./app.js" defer></script>','')
   .replace('<script src="./catalog.js" defer></script>','')
   .replace('<link rel="icon" type="image/svg+xml" href="./favicon.svg">',`<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,${encodeURIComponent(svg)}">`)
-  .replace('</body>',`<script>\n${catalog.source}\n</script><script>\n${js}\n</script>\n</body>`);
+  .replace('</body>',`<script>\n${offlineCatalogSource}\n</script><script>\n${js}\n</script>\n</body>`);
 const directory = new URL('outputs/',root);
 await mkdir(directory,{recursive:true});
 const target = new URL('exhibition-draft.html',directory);
