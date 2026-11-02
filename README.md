@@ -1,2 +1,25 @@
-# GBSHS_Exhibition
-2026 GBSHS overseas STEM trip exhibition website
+# GBSHS_Exhibition — 여행의 조각
+
+2026 해외 이공계 체험학습 온라인 전시관. 실제 제출물 대신 단색 사각형과 예시 제목·학번·이름을 사용한다. 학생 제출물을 불러오지 않는다.
+
+전체 및 6개 전시관, 검색, 학번순·제목순 정렬, 작품 상세 대화상자, 이전·다음 작품, 페이지 탐색, 키보드 접근과 반응형 배치를 제공한다.
+
+## 로컬 실행
+
+Node.js가 설치된 환경에서 다음 명령으로 실행한다. 별도 패키지 설치는 필요 없다.
+
+```sh
+node server.mjs
+```
+
+http://127.0.0.1:4175 에서 확인한다. `dist/`는 빌드 없이 정적으로 제공할 수 있다.
+
+## 서버 없이 열기
+
+```sh
+node build-preview.mjs
+```
+
+생성된 `outputs/exhibition-draft.html`을 브라우저로 열면 된다. 이 명령은 JavaScript 구문, HTML ID, CSS 괄호 및 외부 의존성도 검사한다.
+
+음악과 영상은 전시 영역만 표시한다. 실제 파일과 작성자 정보는 검증한 작품 목록으로 교체한다.
