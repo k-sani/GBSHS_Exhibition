@@ -152,5 +152,17 @@ if(existsSync(catalogPath)){
     const expected=row.colored.some(cell=>!['default','255,255,255','248,249,250'].includes(cell.entered));
     assert.equal(Boolean(catalog.works.find(work=>work.student===row.student).award),expected);
   }
-  console.log(`Passed: ${catalog.works.length} real works, ${catalog.awardCount} awards, all seven categories, held IDs excluded, manual colors only, lazy viewers and media cleanup.`);
+  for(const resolution of audit.resolvedDuplicates??[]){
+    const chosen=audit.included.find(row=>row.student===resolution.student);
+    const work=catalog.works.find(work=>work.student===resolution.student);
+    const candidates=[chosen,...audit.superseded.filter(row=>row.student===resolution.student)];
+    const marked=candidates.filter(row=>row.awarded);
+    const eligible=marked.length?marked:candidates;
+    assert.equal(work.fileId,chosen.fileId,'Display the exact selected submission file');
+    assert.equal(chosen.row,resolution.row);
+    assert.ok(eligible.some(row=>row.row===chosen.row),'Award-marked submissions take priority');
+    assert.ok(eligible.every(row=>row.timestampSerial<=chosen.timestampSerial),'Use the latest eligible submission timestamp');
+    assert.equal(Boolean(work.award),marked.length>0);
+  }
+  console.log(`Passed: ${catalog.works.length} real works, ${catalog.awardCount} awards, all seven categories, unique IDs, manual colors, award-priority and latest-submission selection, lazy viewers and media cleanup.`);
 }
