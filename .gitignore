@@ -2,3 +2,7 @@
 outputs/
 node_modules/
 *.log
+
+# Student submission data is stored separately from the public source repository.
+/private/
+/dist/catalog.js
