@@ -13,3 +13,6 @@
 - 원본 Drive 공유 설정은 읽기만 했다. 관람객의 원본 접근과 실제 재생은 로그인하지 않은 환경에서 확인해야 한다.
 - 이전 환경에서는 GitHub 연결 도구의 쓰기 권한이 없어 웹 편집기를 사용했다. 쓰기 권한이 회복되지 않으면 무리하게 우회하지 말고 소스 반영 여부를 구분해 보고한다.
 - Sites 배포 및 브라우저 시각 검증은 성공이 확인된 경우에만 완료로 기록한다.
+
+
+PDF first-page previews: run generate-previews.py after placing original PDFs in private/pdfs. Generated dist/thumbnails are deployment assets excluded from public Git source. private/catalog.json may reference ./thumbnails/{student}.webp. Original titles are reviewed against filenames and first pages; private/title-audit.json records provenance. Current counts: 94 works, 19 awards, 72 PDF previews, 3 image previews, 43 original titles. build-preview.mjs embeds the generated previews in the standalone HTML.
